@@ -1,0 +1,28 @@
+#-----------------------------------------------------------
+# Vivado v2024.1 (64-bit)
+# SW Build 5076996 on Wed May 22 18:36:09 MDT 2024
+# IP Build 5075265 on Wed May 22 21:45:21 MDT 2024
+# SharedData Build 5076995 on Wed May 22 18:29:18 MDT 2024
+# Start of session at: Mon Mar  2 13:53:17 2026
+# Process ID: 193676
+# Current directory: /home/hansa/Desktop/chipyard/fpga/scripts
+# Command line: vivado
+# Log file: /home/hansa/Desktop/chipyard/fpga/scripts/vivado.log
+# Journal file: /home/hansa/Desktop/chipyard/fpga/scripts/vivado.jou
+# Running On        :hansa-usyd
+# Platform          :Ubuntu
+# Operating System  :Ubuntu 24.04.4 LTS
+# Processor Detail  :Intel(R) Core(TM) Ultra 5 125U
+# CPU Frequency     :2969.776 MHz
+# CPU Physical cores:12
+# CPU Logical cores :14
+# Host memory       :16189 MB
+# Swap memory       :4294 MB
+# Total Virtual     :20484 MB
+# Available Virtual :11767 MB
+#-----------------------------------------------------------
+start_gui
+open_project /home/hansa/Desktop/chipyard/fpga/generated-src/chipyard.fpga.genesys2.GENESYS2FPGATestHarness.RocketGENESYS2Config/GENESYS2FPGATestHarness.xpr
+update_compile_order -fileset sources_1
+create_bd_design "design_1"
+update_compile_order -fileset sources_1
