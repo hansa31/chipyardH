@@ -165,6 +165,23 @@ $(BIT_FILE): $(synth_list_f)
 .PHONY: bitstream
 bitstream: $(BIT_FILE)
 
+# Run synthesis only + post-synth timing/utilization reports (no implementation or bitstream)
+SYNTH_CHECKPOINT := $(build_dir)/obj/post_synth.dcp
+$(SYNTH_CHECKPOINT): $(synth_list_f)
+	cd $(build_dir); vivado \
+		-nojournal -mode batch \
+		-source $(fpga_common_script_dir)/synth-report.tcl \
+		-tclargs \
+			-top-module "$(MODEL)" \
+			-F "$(synth_list_f)" \
+			-board "$(BOARD)" \
+			-ip-vivado-tcls "$(shell find '$(build_dir)' -name '*.vivado.tcl')"
+
+.PHONY: synth-only
+synth-only: $(SYNTH_CHECKPOINT)
+	@echo "Synthesis complete. Reports in $(build_dir)/obj/report/"
+	@echo "Checkpoint: $(SYNTH_CHECKPOINT)"
+
 .PHONY: debug-bitstream
 debug-bitstream: $(build_dir)/obj/post_synth.dcp
 	cd $(build_dir); vivado \

@@ -38,6 +38,18 @@ sleep 1
 echo "Resetting serial device..."
 stty -F $DEVICE $BAUDRATE raw -echo 2>/dev/null || true
 
+# Check if user has permission to access the device; use sudo if not
+SUDO_PREFIX=""
+if [ ! -r "$DEVICE" ] || [ ! -w "$DEVICE" ]; then
+    echo "Warning: No read/write access to $DEVICE."
+    echo "Tip: To avoid needing sudo, add yourself to the dialout group:"
+    echo "  sudo usermod -aG dialout $USER"
+    echo "  (then log out and back in)"
+    echo ""
+    echo "Using sudo for this session..."
+    SUDO_PREFIX="sudo"
+fi
+
 echo "Connecting to $DEVICE at $BAUDRATE baud..."
 echo "Choose connection method:"
 echo "1) picocom (recommended)"
@@ -59,9 +71,9 @@ case $choice in
         echo "Starting picocom... (Ctrl+A, Ctrl+X to exit)"
         if [ $LOG_ENABLED -eq 1 ]; then
             echo "Starting picocom wrapped with script to log to $LOGFILE"
-            script -q -c "picocom -b $BAUDRATE $DEVICE" "$LOGFILE"
+            script -q -c "$SUDO_PREFIX picocom -b $BAUDRATE $DEVICE" "$LOGFILE"
         else
-            picocom -b $BAUDRATE $DEVICE
+            $SUDO_PREFIX picocom -b $BAUDRATE $DEVICE
         fi
         ;;
     2)
@@ -70,9 +82,9 @@ case $choice in
             # screen's logfile naming varies; wrap screen with 'script' to capture its session to our logfile
             echo "Starting screen with session logging to $LOGFILE (wrapped with script)"
             # -q: quiet, -c: command to run, then logfile path
-            script -q -c "screen $DEVICE $BAUDRATE" "$LOGFILE"
+            script -q -c "$SUDO_PREFIX screen $DEVICE $BAUDRATE" "$LOGFILE"
         else
-            screen $DEVICE $BAUDRATE
+            $SUDO_PREFIX screen $DEVICE $BAUDRATE
         fi
         ;;
     3)
@@ -80,9 +92,9 @@ case $choice in
         if command -v minicom &> /dev/null; then
             if [ $LOG_ENABLED -eq 1 ]; then
                 echo "Starting minicom with capture to $LOGFILE"
-                minicom -D $DEVICE -b $BAUDRATE -C "$LOGFILE"
+                $SUDO_PREFIX minicom -D $DEVICE -b $BAUDRATE -C "$LOGFILE"
             else
-                minicom -D $DEVICE -b $BAUDRATE
+                $SUDO_PREFIX minicom -D $DEVICE -b $BAUDRATE
             fi
         else
             echo "minicom not installed. Install with: sudo apt install minicom"
@@ -92,9 +104,9 @@ case $choice in
         echo "Invalid choice. Using picocom..."
         if [ $LOG_ENABLED -eq 1 ]; then
             echo "Starting picocom wrapped with script to log to $LOGFILE"
-            script -q -c "picocom -b $BAUDRATE $DEVICE" "$LOGFILE"
+            script -q -c "$SUDO_PREFIX picocom -b $BAUDRATE $DEVICE" "$LOGFILE"
         else
-            picocom -b $BAUDRATE $DEVICE
+            $SUDO_PREFIX picocom -b $BAUDRATE $DEVICE
         fi
         ;;
 esac

@@ -7,7 +7,7 @@ set -e
 chipyard_root="$HOME/Desktop/chipyard"
 
 # the Scala/Chisel config class for the FPGA build
-CONFIG="RocketGENESYS2Config"
+CONFIG="GemminiRocketGENESYS2Config"      #change this to your config class if you have a custom one, e.g., MyCustomConfig
 
 # frequency of the peripheral bus clock in Hz
 # This value is passed into the bootloader build so that the UART and other peripherals are clocked correctly

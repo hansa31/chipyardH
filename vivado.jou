@@ -1,0 +1,41 @@
+#-----------------------------------------------------------
+# Vivado v2024.1 (64-bit)
+# SW Build 5076996 on Wed May 22 18:36:09 MDT 2024
+# IP Build 5075265 on Wed May 22 21:45:21 MDT 2024
+# SharedData Build 5076995 on Wed May 22 18:29:18 MDT 2024
+# Start of session at: Fri Mar  6 23:45:59 2026
+# Process ID: 42857
+# Current directory: /home/hansa/Desktop/chipyard
+# Command line: vivado
+# Log file: /home/hansa/Desktop/chipyard/vivado.log
+# Journal file: /home/hansa/Desktop/chipyard/vivado.jou
+# Running On        :hansa-usyd
+# Platform          :Ubuntu
+# Operating System  :Ubuntu 24.04.4 LTS
+# Processor Detail  :Intel(R) Core(TM) Ultra 5 125U
+# CPU Frequency     :3228.985 MHz
+# CPU Physical cores:12
+# CPU Logical cores :14
+# Host memory       :16189 MB
+# Swap memory       :4294 MB
+# Total Virtual     :20484 MB
+# Available Virtual :14814 MB
+#-----------------------------------------------------------
+start_gui
+open_hw_manager
+connect_hw_server -allow_non_jtag
+open_hw_target
+open_hw_target {localhost:3121/xilinx_tcf/Digilent/200300BD5193B}
+current_hw_device [get_hw_devices xc7k325t_0]
+refresh_hw_device -update_hw_probes false [lindex [get_hw_devices xc7k325t_0] 0]
+set_property PROBES.FILE {} [get_hw_devices xc7k325t_0]
+set_property FULL_PROBES.FILE {} [get_hw_devices xc7k325t_0]
+set_property PROGRAM.FILE {/home/hansa/Desktop/chipyard/fpga/bitstream_copy/RocketGENESYS2Config.bit} [get_hw_devices xc7k325t_0]
+program_hw_devices [get_hw_devices xc7k325t_0]
+refresh_hw_device [lindex [get_hw_devices xc7k325t_0] 0]
+refresh_hw_target {localhost:3121/xilinx_tcf/Digilent/200300BD5193B}
+set_property PROBES.FILE {} [get_hw_devices xc7k325t_0]
+set_property FULL_PROBES.FILE {} [get_hw_devices xc7k325t_0]
+set_property PROGRAM.FILE {/home/hansa/Desktop/chipyard/fpga/bitstream_copy/RocketGENESYS2Config.bit} [get_hw_devices xc7k325t_0]
+program_hw_devices [get_hw_devices xc7k325t_0]
+refresh_hw_device [lindex [get_hw_devices xc7k325t_0] 0]
