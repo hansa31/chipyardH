@@ -276,3 +276,17 @@ dismissDialog("Program Device"); // bj (Program Device Progress)
 selectButton(PAResourceAtoD.CmdMsgDialog_OK, "OK", "Close Hardware Target"); // f (PAResourceAtoD.CmdMsgDialog_OK)
 dismissDialog("Close Hardware Target"); // j.a (dialog6)
 // HMemoryUtils.trashcanNow. Engine heap size: 1,811 MB. GUI used memory: 56 MB. Current time: 3/7/26, 2:24:20 AM AEDT
+// HMemoryUtils.trashcanNow. Engine heap size: 1,811 MB. GUI used memory: 57 MB. Current time: 3/7/26, 2:54:20 AM AEDT
+// HMemoryUtils.trashcanNow. Engine heap size: 1,811 MB. GUI used memory: 56 MB. Current time: 3/7/26, 3:24:20 AM AEDT
+// WARNING: HEventQueue.dispatchEvent() is taking  75746311 ms.
+// HMemoryUtils.trashcanNow. Engine heap size: 1,811 MB. GUI used memory: 57 MB. Current time: 3/8/26, 12:38:55 AM AEDT
+// HMemoryUtils.trashcanNow. Engine heap size: 1,811 MB. GUI used memory: 56 MB. Current time: 3/8/26, 1:08:55 AM AEDT
+// WARNING: HEventQueue.dispatchEvent() is taking  1982 ms.
+// HMemoryUtils.trashcanNow. Engine heap size: 1,811 MB. GUI used memory: 56 MB. Current time: 3/8/26, 1:38:57 AM AEDT
+// HMemoryUtils.trashcanNow. Engine heap size: 1,811 MB. GUI used memory: 57 MB. Current time: 3/8/26, 2:08:57 AM AEDT
+// HMemoryUtils.trashcanNow. Engine heap size: 1,811 MB. GUI used memory: 56 MB. Current time: 3/8/26, 2:38:57 AM AEDT
+// HMemoryUtils.trashcanNow. Engine heap size: 1,811 MB. GUI used memory: 57 MB. Current time: 3/8/26, 3:08:57 AM AEDT
+// HMemoryUtils.trashcanNow. Engine heap size: 1,811 MB. GUI used memory: 56 MB. Current time: 3/8/26, 3:38:57 AM AEDT
+// HMemoryUtils.trashcanNow. Engine heap size: 1,811 MB. GUI used memory: 56 MB. Current time: 3/8/26, 4:08:57 AM AEDT
+// WARNING: HEventQueue.dispatchEvent() is taking  30584546 ms.
+// HMemoryUtils.trashcanNow. Engine heap size: 1,811 MB. GUI used memory: 57 MB. Current time: 3/8/26, 12:58:38 PM AEDT
