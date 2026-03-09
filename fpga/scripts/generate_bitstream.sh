@@ -4,7 +4,8 @@
 # exit immediately if any command fails
 set -e
 
-chipyard_root="$HOME/Desktop/chipyard"
+#chipyard_root="$HOME/Desktop/chipyard"
+chipyard_root="$HOME/Desktop/GemminiChipyard/chipyard"
 
 # the Scala/Chisel config class for the FPGA build
 CONFIG="GemminiRocketGENESYS2Config"      #change this to your config class if you have a custom one, e.g., MyCustomConfig
@@ -33,7 +34,9 @@ cd $chipyard_root
 source env.sh
 
 # source vivado settings to get vivado tools in the path
-source /tools/Xilinx/Vivado/2024.1/settings64.sh
+#source /tools/Xilinx/Vivado/2024.1/settings64.sh
+source /tools/Xilinx/Vivado/2021.2/settings64.sh
+
 
 # build sdboot
 # Goes into the sdboot directory containing the small ROM program that the FPGA will execute at reset
@@ -63,6 +66,45 @@ if command -v dtc >/dev/null 2>&1; then
     echo "DTB compiled: $dts_dir/$CONFIG.dtb"
 else
     echo "WARNING: dtc not found in PATH, cannot compile DTS to DTB."
+fi
+
+# ── SSD backup (only if the SSD is mounted) ──────────────────────────────
+SSD_MOUNT="/media/hansa/SanDisk1TBH"
+
+if mountpoint -q "$SSD_MOUNT" 2>/dev/null; then
+    timestamp=$(date +%Y%m%d_%H%M%S)
+    ssd_dest="$SSD_MOUNT/chipyard_fpga_builds/${CONFIG}_${timestamp}"
+    mkdir -p "$ssd_dest/reports"
+
+    echo ""
+    echo "SSD detected at $SSD_MOUNT – copying build artifacts..."
+
+    # copy bitstream
+    cp "$generated_dir/obj/"*.bit "$ssd_dest/$CONFIG.bit"
+    echo "  Bitstream  -> $ssd_dest/$CONFIG.bit"
+
+    # copy Vivado reports (timing, utilization, power, drc, etc.)
+    if ls "$generated_dir/obj/"*.rpt 1>/dev/null 2>&1; then
+        cp "$generated_dir/obj/"*.rpt "$ssd_dest/reports/"
+        echo "  Reports    -> $ssd_dest/reports/"
+    fi
+    # also grab any reports from the runs directory
+    if ls "$generated_dir/obj/"*.log 1>/dev/null 2>&1; then
+        cp "$generated_dir/obj/"*.log "$ssd_dest/reports/"
+        echo "  Logs       -> $ssd_dest/reports/"
+    fi
+
+    # copy DTS / DTB
+    cp "$dts_dir/$CONFIG.dts" "$ssd_dest/$CONFIG.dts"
+    if [ -f "$dts_dir/$CONFIG.dtb" ]; then
+        cp "$dts_dir/$CONFIG.dtb" "$ssd_dest/$CONFIG.dtb"
+    fi
+    echo "  DTS/DTB    -> $ssd_dest/"
+
+    echo "SSD backup complete: $ssd_dest"
+else
+    echo ""
+    echo "NOTE: SSD not detected at $SSD_MOUNT – skipping SSD backup."
 fi
 
 # final messages to the user about where things are and what to do next

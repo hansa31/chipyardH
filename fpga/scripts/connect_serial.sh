@@ -11,7 +11,12 @@ then
     sudo apt install -y picocom
 fi
 
-DEVICE="/dev/ttyUSB0"
+# Prefer ttyUSB1 (UART channel of FT2232H); fall back to ttyUSB0
+if [ -e "/dev/ttyUSB1" ]; then
+    DEVICE="/dev/ttyUSB1"
+else
+    DEVICE="/dev/ttyUSB0"
+fi
 BAUDRATE="115200"
 
 echo "FPGA Serial Connection Script"
@@ -34,9 +39,13 @@ pkill -f "picocom.*ttyUSB" 2>/dev/null || true
 # Wait a moment
 sleep 1
 
-# Reset the device
-echo "Resetting serial device..."
-stty -F $DEVICE $BAUDRATE raw -echo 2>/dev/null || true
+# Configure the serial device:
+#   -crtscts : disable hardware RTS/CTS flow control
+#              (prevents 'error from flowcontrol urb' USB disconnect)
+#   -hupcl   : don't drop DTR on last close
+#              (prevents FTDI USB disconnect when picocom exits)
+echo "Configuring serial device..."
+sudo stty -F $DEVICE $BAUDRATE raw -echo -crtscts -hupcl 2>/dev/null || true
 
 # Check if user has permission to access the device; use sudo if not
 SUDO_PREFIX=""
@@ -71,9 +80,9 @@ case $choice in
         echo "Starting picocom... (Ctrl+A, Ctrl+X to exit)"
         if [ $LOG_ENABLED -eq 1 ]; then
             echo "Starting picocom wrapped with script to log to $LOGFILE"
-            script -q -c "$SUDO_PREFIX picocom -b $BAUDRATE $DEVICE" "$LOGFILE"
+            script -q -c "$SUDO_PREFIX picocom -b $BAUDRATE --flow n --noinit --noreset $DEVICE" "$LOGFILE"
         else
-            $SUDO_PREFIX picocom -b $BAUDRATE $DEVICE
+            $SUDO_PREFIX picocom -b $BAUDRATE --flow n --noinit --noreset $DEVICE
         fi
         ;;
     2)
@@ -104,9 +113,9 @@ case $choice in
         echo "Invalid choice. Using picocom..."
         if [ $LOG_ENABLED -eq 1 ]; then
             echo "Starting picocom wrapped with script to log to $LOGFILE"
-            script -q -c "$SUDO_PREFIX picocom -b $BAUDRATE $DEVICE" "$LOGFILE"
+            script -q -c "$SUDO_PREFIX picocom -b $BAUDRATE --flow n --noinit --noreset $DEVICE" "$LOGFILE"
         else
-            $SUDO_PREFIX picocom -b $BAUDRATE $DEVICE
+            $SUDO_PREFIX picocom -b $BAUDRATE --flow n --noinit --noreset $DEVICE
         fi
         ;;
 esac
