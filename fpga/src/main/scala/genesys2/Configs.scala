@@ -100,6 +100,15 @@ class GemminiRocketGENESYS2Config extends Config(
   new chipyard.RocketConfig
 )
 
+// new gemmini configs for GENESYS2, by hansa, from genesys2-fpga branch
+class GemminiRocketGENESYS2Config2 extends Config(
+  new gemmini.GemminiCustomConfig ++                      // uses smallGemminiV via customConfig
+  new chipyard.config.WithSystemBusWidth(128) ++          // Gemmini DMA needs 128-bit bus
+  new WithFPGAFrequency(35) ++                            // 50MHz for timing closure
+  new WithGENESYS2Tweaks ++
+  new chipyard.RocketConfig
+)
+
 class BoomGENESYS2Config extends Config(
   new WithFPGAFrequency(50) ++
   new WithGENESYS2Tweaks ++
