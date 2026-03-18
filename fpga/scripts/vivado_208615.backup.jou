@@ -1,0 +1,37 @@
+#-----------------------------------------------------------
+# Vivado v2024.1 (64-bit)
+# SW Build 5076996 on Wed May 22 18:36:09 MDT 2024
+# IP Build 5075265 on Wed May 22 21:45:21 MDT 2024
+# SharedData Build 5076995 on Wed May 22 18:29:18 MDT 2024
+# Start of session at: Mon Mar  2 14:29:56 2026
+# Process ID: 208615
+# Current directory: /home/hansa/Desktop/chipyard/fpga/scripts
+# Command line: vivado -mode gui -source /home/hansa/Desktop/chipyard/fpga/scripts/program_fpga.tcl
+# Log file: /home/hansa/Desktop/chipyard/fpga/scripts/vivado.log
+# Journal file: /home/hansa/Desktop/chipyard/fpga/scripts/vivado.jou
+# Running On        :hansa-usyd
+# Platform          :Ubuntu
+# Operating System  :Ubuntu 24.04.4 LTS
+# Processor Detail  :Intel(R) Core(TM) Ultra 5 125U
+# CPU Frequency     :4065.405 MHz
+# CPU Physical cores:12
+# CPU Logical cores :14
+# Host memory       :16189 MB
+# Swap memory       :4294 MB
+# Total Virtual     :20484 MB
+# Available Virtual :8912 MB
+#-----------------------------------------------------------
+start_gui
+source /home/hansa/Desktop/chipyard/fpga/scripts/program_fpga.tcl
+create_hw_cfgmem -hw_device [lindex [get_hw_devices xc7k325t_0] 0] [lindex [get_cfgmem_parts {s25fl256sxxxxxx0-spi-x1_x2_x4}] 0]
+set_property PROGRAM.BLANK_CHECK  0 [ get_property PROGRAM.HW_CFGMEM [lindex [get_hw_devices xc7k325t_0] 0]]
+set_property PROGRAM.ERASE  1 [ get_property PROGRAM.HW_CFGMEM [lindex [get_hw_devices xc7k325t_0] 0]]
+set_property PROGRAM.CFG_PROGRAM  1 [ get_property PROGRAM.HW_CFGMEM [lindex [get_hw_devices xc7k325t_0] 0]]
+set_property PROGRAM.VERIFY  1 [ get_property PROGRAM.HW_CFGMEM [lindex [get_hw_devices xc7k325t_0] 0]]
+set_property PROGRAM.CHECKSUM  0 [ get_property PROGRAM.HW_CFGMEM [lindex [get_hw_devices xc7k325t_0] 0]]
+refresh_hw_device [lindex [get_hw_devices xc7k325t_0] 0]
+set_property PROBES.FILE {} [get_hw_devices xc7k325t_0]
+set_property FULL_PROBES.FILE {} [get_hw_devices xc7k325t_0]
+set_property PROGRAM.FILE {/home/hansa/Desktop/chipyard/fpga/bitstream_copy/RocketGENESYS2Config.bit} [get_hw_devices xc7k325t_0]
+program_hw_devices [get_hw_devices xc7k325t_0]
+refresh_hw_device [lindex [get_hw_devices xc7k325t_0] 0]
