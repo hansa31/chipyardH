@@ -30,3 +30,11 @@ project/project/
 .classpath_cache/
 .vscode/
 tests/build/
+
+# Approximate multiplier bitstream batch directories
+fpga/approx_batch_*/
+
+# Approximate multiplier benchmark results and logs
+fpga/scripts/batch_inference_log*.txt
+fpga/scripts/resnet50_only_*.log
+fpga/scripts/RESULTS.md

@@ -1,0 +1,188 @@
+#!/usr/bin/expect -f
+#
+# run_soc_resnet50_only.expect
+#
+# Runs ONLY resnet50_v1-linux (ImageNet) on the SoC, stopping after batch 25
+# when the [Images 1-100] window line appears.
+#
+# Based on run_soc_inference_v2.expect — boot logic is identical, but only
+# the single resnet50_v1 test is executed.
+#
+# Usage (called by batch_resnet50_only.sh):
+#   expect run_soc_resnet50_only.expect <bitstream_name> <bitfile_path> <host_timestamp>
+
+set bitstream_name [lindex $argv 0]
+set bitfile        [lindex $argv 1]
+set host_ts        [lindex $argv 2]
+
+if {$bitstream_name eq "" || $bitfile eq "" || $host_ts eq ""} {
+    puts "ERROR: Three arguments required."
+    puts "Usage: expect run_soc_resnet50_only.expect <bitstream_name> <bitfile_path> <host_ts>"
+    exit 1
+}
+if {![file exists $bitfile]} {
+    puts "ERROR: Bitstream file not found: $bitfile"
+    exit 1
+}
+
+set script_dir [file dirname [file normalize [info script]]]
+set reset_tcl  "$script_dir/reset_fpga.tcl"
+
+# ── Serial device — mirrors connect_serial.sh preference ──────────────────
+if {[file exists "/dev/ttyUSB1"]} {
+    set device "/dev/ttyUSB1"
+} else {
+    set device "/dev/ttyUSB0"
+}
+set baudrate 115200
+
+puts "INFO: Device      : $device @ $baudrate baud"
+puts "INFO: Bitstream   : $bitstream_name"
+puts "INFO: Host TS     : $host_ts"
+
+# ── Boot loop ─────────────────────────────────────────────────────────────
+set booted 0
+for {set attempt 1} {$attempt <= 5} {incr attempt} {
+    puts "INFO: Reset attempt $attempt/5 — reprogramming FPGA..."
+
+    catch {exec vivado -mode batch -nolog -nojournal \
+               -source $reset_tcl -tclargs $bitfile} vivado_out
+
+    puts "INFO: FPGA programmed. Waiting 2 s for FT2232H USB to settle..."
+    after 2000
+
+    # Kill any stale picocom from a previous iteration, then re-spawn fresh.
+    catch {exec sudo -n fuser -k $device}
+    catch {exec sudo -n pkill -f "picocom.*ttyUSB"}
+    catch {exec sudo -n pkill -f "screen.*ttyUSB"}
+    after 500
+    catch {exec sudo -n stty -F $device $baudrate raw -echo -crtscts -hupcl}
+
+    # Open device permissions using cached sudo so picocom runs without sudo.
+    catch {exec sudo -n chmod 666 $device}
+
+    spawn picocom -b $baudrate --flow n --noinit --noreset $device
+
+    set timeout 15
+    set picocom_ok 0
+    expect {
+        "Terminal ready" { puts "INFO: Serial port open."; set picocom_ok 1 }
+        timeout          { puts "WARNING: picocom did not start on attempt $attempt." }
+    }
+    if {!$picocom_ok} { catch {close}; catch {wait}; continue }
+
+    # Two-stage boot detection
+    set boot_started 0
+    set timeout 60
+    expect {
+        -re {OpenSBI|U-Boot|SD Boot|Booting Linux|Starting kernel} {
+            set boot_started 1
+            puts "INFO: Boot in progress — waiting for shell prompt (stage 2, 6 min)..."
+        }
+        -re {[#$] } { set booted 1 }
+        timeout     { puts "INFO: No boot activity on attempt $attempt — will retry." }
+    }
+
+    if {$booted} { puts "INFO: Linux booted on attempt $attempt."; break }
+
+    if {$boot_started} {
+        set timeout 360
+        expect {
+            -re {[#$] }          { set booted 1 }
+            -re {CMD[0-9]+ERROR} { puts "INFO: SD card error — retrying reset." }
+            timeout { puts "WARNING: Boot started but shell prompt not seen in 6 min." }
+        }
+    }
+
+    if {$booted} { puts "INFO: Linux booted on attempt $attempt."; break }
+
+    # Picocom still open but boot failed — close it before next Vivado call
+    catch {close}
+    catch {wait}
+}
+
+if {!$booted} {
+    puts "ERROR: Linux did not boot after 5 reset attempts."
+    exit 1
+}
+
+# Confirm prompt is live
+send "\r"
+set timeout 15
+expect -re {[#$] }
+
+# ── Set SoC wall clock from host timestamp ────────────────────────────────
+set yr  [string range $host_ts  0  3]
+set mo  [string range $host_ts  4  5]
+set dy  [string range $host_ts  6  7]
+set hh  [string range $host_ts  9 10]
+set mm  [string range $host_ts 11 12]
+set ss  [string range $host_ts 13 14]
+set soc_date "${yr}-${mo}-${dy} ${hh}:${mm}:${ss}"
+
+puts "INFO: Setting SoC clock to: $soc_date"
+send "date -s \"$soc_date\"\r"
+set timeout 10
+expect -re {[#$] }
+
+# ══════════════════════════════════════════════════════════════════════════
+# resnet50_v1 (ImageNet) — the only test
+# After batch 25/125 the binary prints:
+#   [Images 1-100] Window Top-1: XX/100 (XX.0%), Top-5: XX/100 (XX.0%)
+#   [Cumulative 100/500] Top-1: XX.XX%, Top-5: XX.XX%
+# We wait for the first, let the cumulative line flush, then Ctrl+C.
+# 3-hour timeout is just a hang-guard.
+# ══════════════════════════════════════════════════════════════════════════
+puts "INFO: \[1/1\] resnet50_v1 — waiting for \[Images 1-100\] window line..."
+send "cd /Test/imagenet && ./resnet50_v1-linux\r"
+
+set timeout 10800
+expect {
+    -re {\[Images 1-100\][^\r\n]*} {
+        set line $expect_out(0,string)
+        puts "\nINFO: resnet50_v1  RESULT: $line"
+        # Wait briefly so the [Cumulative 100/500] line also prints to the log
+        set timeout 3
+        expect {
+            -re {\[Cumulative[^\r\n]*} {
+                set cline $expect_out(0,string)
+                puts "INFO: resnet50_v1  CUMULATIVE: $cline"
+            }
+            timeout {}
+        }
+        send "\003"
+        set timeout 15
+        expect {
+            -re {[#$] } {}
+            timeout {
+                send "\r"
+                set timeout 10
+                expect -re {[#$] }
+            }
+        }
+    }
+    timeout {
+        puts "WARNING: resnet50_v1 — hang-guard fired before \[Images 1-100\] appeared."
+        send "\003"
+        set timeout 15
+        expect {
+            -re {[#$] } {}
+            timeout {
+                send "\r"
+                set timeout 10
+                expect -re {[#$] }
+            }
+        }
+    }
+}
+
+# ── Return to / and exit picocom ──────────────────────────────────────────
+send "cd /\r"
+set timeout 10
+expect -re {[#$] }
+
+puts "INFO: resnet50_v1 done — $bitstream_name"
+puts "INFO: Results captured in host log file."
+
+send "\x01\x78"
+exit 0

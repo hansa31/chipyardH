@@ -3,23 +3,32 @@
 # SW Build 5076996 on Wed May 22 18:36:09 MDT 2024
 # IP Build 5075265 on Wed May 22 21:45:21 MDT 2024
 # SharedData Build 5076995 on Wed May 22 18:29:18 MDT 2024
-# Start of session at: Mon Mar  2 14:07:54 2026
-# Process ID: 199941
+# Start of session at: Thu Mar 26 00:07:27 2026
+# Process ID: 514412
 # Current directory: /home/hansa/Desktop/chipyard/fpga/scripts
-# Command line: vivado -mode gui -source /home/hansa/Desktop/chipyard/fpga/scripts/open_checkpoint.tcl
+# Command line: vivado
 # Log file: /home/hansa/Desktop/chipyard/fpga/scripts/vivado.log
 # Journal file: /home/hansa/Desktop/chipyard/fpga/scripts/vivado.jou
 # Running On        :hansa-usyd
 # Platform          :Ubuntu
 # Operating System  :Ubuntu 24.04.4 LTS
 # Processor Detail  :Intel(R) Core(TM) Ultra 5 125U
-# CPU Frequency     :1159.957 MHz
+# CPU Frequency     :2949.199 MHz
 # CPU Physical cores:12
 # CPU Logical cores :14
 # Host memory       :16189 MB
 # Swap memory       :4294 MB
 # Total Virtual     :20484 MB
-# Available Virtual :10015 MB
+# Available Virtual :12917 MB
 #-----------------------------------------------------------
 start_gui
-source /home/hansa/Desktop/chipyard/fpga/scripts/open_checkpoint.tcl
+open_hw_manager
+connect_hw_server -allow_non_jtag
+open_hw_target
+current_hw_device [get_hw_devices xc7k325t_0]
+refresh_hw_device -update_hw_probes false [lindex [get_hw_devices xc7k325t_0] 0]
+set_property PROBES.FILE {} [get_hw_devices xc7k325t_0]
+set_property FULL_PROBES.FILE {} [get_hw_devices xc7k325t_0]
+set_property PROGRAM.FILE {/home/hansa/Desktop/chipyard/fpga/approx_batch_20260315_013001/mul8s_1L2N.bit} [get_hw_devices xc7k325t_0]
+program_hw_devices [get_hw_devices xc7k325t_0]
+refresh_hw_device [lindex [get_hw_devices xc7k325t_0] 0]

@@ -1,0 +1,163 @@
+#!/usr/bin/expect -f
+#
+# run_soc_benchmark.expect
+#
+# 1. Connects to the FPGA over UART (picocom)
+# 2. Triggers a reset (FPGA reprogram via Vivado) so the boot is visible
+# 3. Retries up to 5 times if Linux does not boot
+# 4. Runs /Test/run_mlp_benchmarks.sh on the SoC
+# 5. Saves mlp_bench_results.csv to /Test/<bitstream_name>_<timestamp>/
+#
+# Usage (called by batch_benchmark.sh):
+#   expect run_soc_benchmark.expect <bitstream_name> <bitfile_path>
+
+set bitstream_name [lindex $argv 0]
+set bitfile        [lindex $argv 1]
+
+if {$bitstream_name eq "" || $bitfile eq ""} {
+    puts "ERROR: Two arguments required."
+    puts "Usage: expect run_soc_benchmark.expect <bitstream_name> <bitfile_path>"
+    exit 1
+}
+if {![file exists $bitfile]} {
+    puts "ERROR: Bitstream file not found: $bitfile"
+    exit 1
+}
+
+set timestamp  [exec date +%Y%m%d_%H%M%S]
+set outdir     "/Test/${bitstream_name}_${timestamp}"
+set script_dir [file dirname [file normalize [info script]]]
+set reset_tcl  "$script_dir/reset_fpga.tcl"
+
+# ── Serial device — mirrors connect_serial.sh preference ──────────────────
+if {[file exists "/dev/ttyUSB1"]} {
+    set device "/dev/ttyUSB1"
+} else {
+    set device "/dev/ttyUSB0"
+}
+set baudrate 115200
+
+puts "INFO: Device    : $device @ $baudrate baud"
+puts "INFO: Output dir: $outdir"
+
+# ── Kill stale serial processes — mirrors connect_serial.sh ───────────────
+catch {exec sudo fuser -k $device}
+catch {exec sudo pkill -f "picocom.*ttyUSB"}
+catch {exec sudo pkill -f "screen.*ttyUSB"}
+after 1000
+
+# Configure serial device (raw, no flow control, keep DTR — same as connect_serial.sh)
+catch {exec sudo stty -F $device $baudrate raw -echo -crtscts -hupcl}
+
+# ── Launch picocom FIRST — so the boot output is captured from the start ──
+spawn picocom -b $baudrate --flow n --noinit --noreset $device
+
+# Wait for picocom to open the port
+set timeout 15
+expect {
+    "Terminal ready" { puts "INFO: Serial port open." }
+    timeout          { puts "ERROR: picocom did not start."; exit 1 }
+}
+
+# ── Reset loop — reprogram the FPGA (= press reset), watch for boot ───────
+# Two-stage detection mirrors the manual workflow:
+#   Stage 1 (60 s)  : watch for early boot signs (OpenSBI / U-Boot / SD Boot)
+#                     → confirms the reset worked and boot is in progress
+#                     → if nothing in 60 s, board didn't respond: retry reset
+#   Stage 2 (6 min) : wait for the BusyBox shell prompt
+#                     → Linux on FPGA takes ~5 minutes to fully boot
+set booted 0
+for {set attempt 1} {$attempt <= 5} {incr attempt} {
+    puts "INFO: Reset attempt $attempt/5 — reprogramming FPGA..."
+
+    # exec is blocking: Vivado programs the FPGA and returns (~7 s).
+    # picocom continues capturing UART output in the background.
+    catch {exec vivado -mode batch -nolog -nojournal \
+               -source $reset_tcl -tclargs $bitfile} vivado_out
+
+    puts "INFO: FPGA reset done. Waiting for boot activity (stage 1, 60 s)..."
+
+    # Stage 1 — fast check: did anything come out of the UART?
+    set boot_started 0
+    set timeout 60
+    expect {
+        -re {OpenSBI|U-Boot|SD Boot|Booting Linux|Starting kernel} {
+            set boot_started 1
+            puts "INFO: Boot in progress — waiting for shell prompt (stage 2, 6 min)..."
+        }
+        -re {[#$] } {
+            # Booted unusually fast
+            set booted 1
+        }
+        timeout {
+            puts "INFO: No boot activity on attempt $attempt — will retry reset."
+        }
+    }
+
+    if {$booted} { puts "INFO: Linux booted on attempt $attempt."; break }
+
+    if {$boot_started} {
+        # Stage 2 — boot confirmed, wait for shell prompt.
+        # CMD0ERROR / CMD8ERROR means the SD card failed to initialise —
+        # exactly what you see manually before pressing reset again.
+        # Retry immediately instead of waiting the full 6 minutes.
+        set timeout 360
+        expect {
+            -re {[#$] }       { set booted 1 }
+            -re {CMD[0-9]+ERROR} {
+                puts "INFO: SD card error (CMD*ERROR) — retrying reset immediately."
+            }
+            timeout { puts "WARNING: Boot started but shell prompt not seen in 6 min." }
+        }
+    }
+
+    if {$booted} { puts "INFO: Linux booted on attempt $attempt."; break }
+}
+
+if {!$booted} {
+    puts "ERROR: Linux did not boot after 5 reset attempts."
+    send "\x01\x78"
+    exit 1
+}
+
+# Confirm prompt is live
+send "\r"
+set timeout 15
+expect -re {[#$] }
+
+# ── Create named output directory on SoC ─────────────────────────────────
+send "mkdir -p $outdir && echo DIR_OK\r"
+set timeout 15
+expect {
+    "DIR_OK"  {}
+    timeout   { puts "WARNING: mkdir may have failed." }
+}
+expect -re {[#$] }
+
+# ── Run MLP benchmarks ────────────────────────────────────────────────────
+puts "INFO: Running benchmarks..."
+send "cd /Test && sh run_mlp_benchmarks.sh\r"
+
+set timeout 600
+expect {
+    "Results saved to:" { puts "INFO: Benchmarks complete." }
+    timeout             { puts "WARNING: Timed out waiting for benchmark completion." }
+}
+
+set timeout 30
+expect -re {[#$] }
+
+# ── Copy CSV to named directory ───────────────────────────────────────────
+send "cp /Test/mlp_bench_results.csv $outdir/ && echo CSV_OK\r"
+set timeout 15
+expect {
+    "CSV_OK" { puts "INFO: CSV saved to $outdir" }
+    timeout  { puts "WARNING: CSV copy may have failed." }
+}
+expect -re {[#$] }
+
+puts "INFO: Done — $bitstream_name"
+
+# Exit picocom cleanly: Ctrl+A then Ctrl+X
+send "\x01\x78"
+exit 0
